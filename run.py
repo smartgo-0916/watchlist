@@ -167,10 +167,22 @@ price_map = fetch_prices_batched(tickers, period="5y", interval="1d")
 watchlist_df = make_today_watchlist(tickers, price_map)
 
 # ==== write to sheet ====
-ws = open_or_create_tab(sh, TAB_NAME)
-set_with_dataframe(ws, watchlist_df)
+from gspread_dataframe import set_with_dataframe
+from datetime import datetime, timezone, timedelta
+
+# write table starting at row 2 (row 1 reserved for timestamp)
+set_with_dataframe(ws, watchlist_df, row=2, col=1,
+                   include_index=False, include_column_header=True, resize=True)
+
+# timestamp in A1
+JST = timezone(timedelta(hours=9))
+stamp = f"Last updated (JST): {datetime.now(JST).strftime('%Y-%m-%d %H:%M')}"
+ws.update_acell('A1', stamp)   # ← NOTE: update_acell, not update("A1", "text")
+print(stamp)
+
 
 # stamp
 JST = timezone(timedelta(hours=9))
 ws.update('A1', f"Last updated (JST): {datetime.now(JST).strftime('%Y-%m-%d %H:%M')}")
 print(f"Rows: {len(watchlist_df)} written to sheet '{TAB_NAME}' in {SHEET_ID}")
+
