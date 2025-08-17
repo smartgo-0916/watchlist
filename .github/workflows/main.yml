@@ -1,7 +1,7 @@
 name: daily-watchlist
 on:
   schedule:
-    - cron: "0 22 * * *"   # 07:00 JST（GitHubはUTC運用）
+    - cron: "0 22 * * *"   # 07:00 JST (GitHubはUTC)
   workflow_dispatch:
 permissions:
   contents: read
@@ -14,8 +14,24 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r requirements.txt
-      - env:
+
+      # --- 診断: Secrets/ファイルの有無を表示 ---
+      - name: Diagnostics (env & files)
+        run: |
+          ls -la
+          python - << 'PY'
+          import os, pathlib
+          print("Has SHEET_ID?               ", bool(os.getenv("SHEET_ID")))
+          print("Has GOOGLE_SERVICE_ACCOUNT_JSON?", bool(os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON")))
+          print("prime_master.csv exists?    ", pathlib.Path("prime_master.csv").exists())
+          print("WORKSHEET_GID (optional):   ", os.getenv("WORKSHEET_GID"))
+          PY
+
+      # --- 実行 ---
+      - name: Run
+        env:
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           SHEET_ID: ${{ secrets.SHEET_ID }}
+          WORKSHEET_GID: "496453378"   # ← あなたの公開URLの gid
           USE_FIRST_N: 400
         run: python run.py
